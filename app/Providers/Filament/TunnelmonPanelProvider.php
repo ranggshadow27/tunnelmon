@@ -10,6 +10,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -28,8 +29,15 @@ class TunnelmonPanelProvider extends PanelProvider
             ->path('tunnelmon')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Teal,
+                'secondary' => Color::Slate,
             ])
+            ->spa()
+            ->font('Inter')
+            ->sidebarWidth('15em')
+            ->sidebarCollapsibleOnDesktop()
+            ->collapsedSidebarWidth('15em')
+            ->maxContentWidth(MaxWidth::Full)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([

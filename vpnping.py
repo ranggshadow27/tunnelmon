@@ -18,7 +18,7 @@ mikrotik_password = os.getenv("MIKROTIK_PASSWORD")
 # Konfigurasi database dari .env
 db_config = {
     'host': os.getenv("DB_HOST"),
-    'user': os.getenv("DB_USER"),
+    'user': os.getenv("DB_USERNAME"),
     'password': os.getenv("DB_PASSWORD"),
     'database': os.getenv("DB_DATABASE")
 }
@@ -109,14 +109,18 @@ def ping_and_store():
                 print(f"[DEBUG] Error output: {error_output}")
 
             # Cek jumlah paket yang diterima menggunakan regex
-            received_match = re.search(r"received=(\d+)", output)
-            packet_loss_match = re.search(r"packet-loss=(\d+)%", output)
-            ping_stats_match = re.search(r"sent=\d+ received=\d+ packet-loss=\d+% min-rtt=\d+ms avg-rtt=\d+ms max-rtt=\d+ms", output)
+            # Cek tiap komponen pake regex terpisah
+            sent_match = re.search(r"sent[ =]+(\d+)", output, re.IGNORECASE)
+            received_match = re.search(r"received[ =]+(\d+)", output, re.IGNORECASE)
+            packet_loss_match = re.search(r"packet-loss[ =]+(\d+)%", output, re.IGNORECASE)
+            min_rtt_match = re.search(r"min-rtt[ =]+(\d+)ms", output, re.IGNORECASE)
+            avg_rtt_match = re.search(r"avg-rtt[ =]+(\d+)ms", output, re.IGNORECASE)
+            max_rtt_match = re.search(r"max-rtt[ =]+(\d+)ms", output, re.IGNORECASE)
 
             # Inisialisasi nilai default
             status = 0
             packet_loss = 100
-            message = "Ping Result: No response"
+            sent = received = min_rtt = avg_rtt = max_rtt = "N/A"# Ambil nilai kalau ketemu
 
             if received_match:
                 received_count = int(received_match.group(1))
@@ -131,22 +135,27 @@ def ping_and_store():
             else:
                 print(f"[DEBUG] Tidak menemukan 'packet-loss=X%' di output untuk {ip}")
 
-            if ping_stats_match:
-                sent = ping_stats_match.group(1)
-                received = ping_stats_match.group(2)
-                packet_loss_stat = ping_stats_match.group(3)
-                min_rtt = ping_stats_match.group(4)
-                avg_rtt = ping_stats_match.group(5)
-                max_rtt = ping_stats_match.group(6)
-                timestamp = datetime.now().strftime("%d %b %Y %H:%M:%S")
-                message = f"[{timestamp}] Ping Stats: sent={sent} | received={received} | packet-loss={packet_loss_stat}% | min-rtt={min_rtt}ms | avg-rtt={avg_rtt}ms | max-rtt={max_rtt}ms"
-                print(f"[DEBUG] Message untuk {ip}: {message}")
+            if sent_match:
+                sent = sent_match.group(1)
+            if received_match:
+                received = received_match.group(1)
+            if packet_loss_match:
+                packet_loss_stat = packet_loss_match.group(1)
             else:
-                timestamp = datetime.now().strftime("%d %b %Y %H:%M:%S")
-                message = f"[{timestamp}] Ping Stats: No response"
-                print(f"[DEBUG] Tidak menemukan statistik ping di output untuk {ip}")
+                packet_loss_stat = "N/A"
+            if min_rtt_match:
+                min_rtt = min_rtt_match.group(1)
+            if avg_rtt_match:
+                avg_rtt = avg_rtt_match.group(1)
+            if max_rtt_match:
+                max_rtt = max_rtt_match.group(1)
 
-            print(f"[DEBUG] Status ping ke {ip}: {'Success' if status == 1 else 'Failed'}")
+            timestamp = datetime.now().strftime("%d %b %Y %H:%M:%S")
+            if received_match and packet_loss_match:
+                message = f"[{timestamp}] Ping Stats: sent={sent} | received={received} | packet-loss={packet_loss_stat}% | min-rtt={min_rtt}ms | avg-rtt={avg_rtt}ms | max-rtt={max_rtt}ms"
+            else:
+                message = f"[{timestamp}] Ping Stats: No response"
+            print(f"[DEBUG] Message untuk {ip}: {message}")
 
             # Simpan ke database
             query = "INSERT INTO ping_results (ip_address, status, packet_loss, message, created_at, updated_at) VALUES (%s, %s, %s, %s, NOW(), NOW())"
