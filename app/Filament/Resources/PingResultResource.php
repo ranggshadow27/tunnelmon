@@ -13,6 +13,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Malzariey\FilamentDaterangepickerFilter\Enums\DropDirection;
+use Malzariey\FilamentDaterangepickerFilter\Enums\OpenDirection;
+use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 
 class PingResultResource extends Resource
 {
@@ -132,6 +135,11 @@ class PingResultResource extends Resource
                                 ->toArray());
                         }
                     }),
+
+                DateRangeFilter::make('created_at')
+                    ->label("Timestamp Filter")
+                    ->opens(OpenDirection::CENTER)
+                    ->drops(DropDirection::AUTO),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
